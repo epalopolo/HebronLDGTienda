@@ -215,23 +215,24 @@
   </div>
 
   <script>
-    // Aquí va el código JavaScript que te proporcioné
     document.getElementById("createForm").addEventListener("submit", async function (event) {
       event.preventDefault();
 
       const formData = new FormData(event.target);
       const data = Object.fromEntries(formData.entries());
 
-      if (data.tipo === "otros") {
-        data.tipo = data.tipo_custom || "";
+      // Manejo de campos personalizados
+      if (data.Tipo === "otros") {
+        data.Tipo = data.Tipo_custom || "";
       }
-      if (data.subtipo === "otros") {
-        data.subtipo = data.subtipo_custom || "";
+      if (data.Subtipo === "otros") {
+        data.Subtipo = data.Subtipo_custom || "";
       }
-      if (data.tipoasamb === "otros") {
-        data.tipoasamb = data.tipoasamb_custom || "";
+      if (data.TipoAsamb === "otros") {
+        data.TipoAsamb = data.TipoAsamb_custom || "";
       }
 
+      // Agregar la acción al cuerpo de la solicitud
       data.action = "add";
 
       try {
@@ -243,6 +244,7 @@
           body: JSON.stringify(data),
         });
 
+        // Manejar la respuesta del servidor
         const result = await response.json();
         if (result.status === "success") {
           alert("Registro creado exitosamente.");
