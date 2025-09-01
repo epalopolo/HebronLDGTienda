@@ -836,4 +836,233 @@
                     <div>
                         <h4>${item.name}</h4>
                         <p>Variedad: ${item.variety}</p>
-                        <p>Cantidad: ${item.quantity} | Precio: $${item.price} c/u</p
+                        <p>Cantidad: ${item.quantity} | Precio: ${item.price} c/u</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 1.2em; font-weight: bold; color: #ff6b6b;">${itemTotal}</div>
+                        <button onclick="removeFromCart(${index})" style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 15px; cursor: pointer; margin-top: 10px;">
+                            <i class="fas fa-trash"></i> Eliminar
+                        </button>
+                    </div>
+                `;
+                cartItems.appendChild(cartItem);
+            });
+            
+            cartTotal.innerHTML = `Total: ${total}`;
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            updateCartCount();
+            displayCart();
+        }
+
+        // Search and filter functions
+        function filterProducts() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const category = document.getElementById('categorySelect').value;
+            const sortBy = document.getElementById('sortSelect').value;
+
+            let filtered = products.filter(product => {
+                const matchesSearch = product.name.toLowerCase().includes(searchTerm) ||
+                                    product.description.toLowerCase().includes(searchTerm);
+                const matchesCategory = !category || product.category === category;
+                return matchesSearch && matchesCategory;
+            });
+
+            // Sort products
+            if (sortBy === 'az') {
+                filtered.sort((a, b) => a.name.localeCompare(b.name));
+            } else if (sortBy === 'precio') {
+                filtered.sort((a, b) => a.price - b.price);
+            }
+
+            currentProducts = filtered;
+            displayProducts();
+        }
+
+        // Delivery and payment selection
+        function selectDelivery(method) {
+            selectedDelivery = method;
+            document.querySelectorAll('.payment-options .payment-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            event.target.closest('.payment-option').classList.add('selected');
+        }
+
+        function selectPayment(method) {
+            selectedPayment = method;
+            document.querySelectorAll('.payment-options .payment-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            event.target.closest('.payment-option').classList.add('selected');
+        }
+
+        function displayOrderSummary() {
+            const orderSummary = document.getElementById('orderSummary');
+            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            
+            let summaryHTML = '<h3>Resumen del Pedido</h3>';
+            cart.forEach(item => {
+                summaryHTML += `
+                    <div style="display: flex; justify-content: space-between; margin: 10px 0; padding: 10px; background: white; border-radius: 8px;">
+                        <div>
+                            <strong>${item.name}</strong><br>
+                            <small>Variedad: ${item.variety} | Cantidad: ${item.quantity}</small>
+                        </div>
+                        <div style="font-weight: bold;">${item.price * item.quantity}</div>
+                    </div>
+                `;
+            });
+            
+            summaryHTML += `
+                <div style="border-top: 2px solid #ff6b6b; padding-top: 15px; margin-top: 15px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 1.2em; font-weight: bold;">
+                        <span>Total:</span>
+                        <span style="color: #ff6b6b;">${total}</span>
+                    </div>
+                </div>
+                <div style="margin-top: 20px; padding: 15px; background: #e8f5e8; border-radius: 8px;">
+                    <h4 style="color: #28a745; margin-bottom: 10px;">Datos de entrega:</h4>
+                    <p><strong>Método de entrega:</strong> ${selectedDelivery === 'uber' ? 'UberMoto' : selectedDelivery === 'rappi' ? 'Rappi' : 'No seleccionado'}</p>
+                    <p><strong>Método de pago:</strong> ${selectedPayment === 'brubank' ? 'Brubank (QR/Link)' : 'Tarjeta de Débito'}</p>
+                </div>
+            `;
+            
+            orderSummary.innerHTML = summaryHTML;
+        }
+
+        // Event listeners
+        document.getElementById('searchInput').addEventListener('input', filterProducts);
+        document.getElementById('categorySelect').addEventListener('change', filterProducts);
+        document.getElementById('sortSelect').addEventListener('change', filterProducts);
+
+        // Form submission
+        document.getElementById('checkoutForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Validate form
+            const fullName = document.getElementById('fullName').value;
+            const phone = document.getElementById('phone').value;
+            const email = document.getElementById('email').value;
+            const address = document.getElementById('address').value;
+            
+            if (!fullName || !phone || !email || !address) {
+                alert('Por favor completa todos los campos obligatorios');
+                return;
+            }
+            
+            if (!selectedDelivery) {
+                alert('Por favor selecciona un método de entrega');
+                return;
+            }
+            
+            // Simulate payment process
+            if (selectedPayment === 'brubank') {
+                // Simulate Brubank payment
+                const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                alert(`Redirigiendo a Brubank para pago de ${total}...\n\nEn una implementación real, aquí se generaría el QR o link de pago.`);
+                
+                // Simulate successful payment
+                setTimeout(() => {
+                    processOrder();
+                }, 2000);
+            } else {
+                // Simulate card payment
+                alert('Procesando pago con tarjeta de débito...');
+                setTimeout(() => {
+                    processOrder();
+                }, 2000);
+            }
+        });
+
+        function processOrder() {
+            // Here you would normally save the order to your database
+            const orderData = {
+                id: Date.now(),
+                customerInfo: {
+                    fullName: document.getElementById('fullName').value,
+                    phone: document.getElementById('phone').value,
+                    email: document.getElementById('email').value,
+                    address: document.getElementById('address').value
+                },
+                items: [...cart],
+                delivery: selectedDelivery,
+                payment: selectedPayment,
+                total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+                status: 'confirmed',
+                orderDate: new Date().toISOString()
+            };
+            
+            console.log('Order processed:', orderData);
+            
+            // Clear cart
+            cart = [];
+            updateCartCount();
+            
+            // Show confirmation
+            showConfirmation();
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('productModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            displayProducts();
+            updateCartCount();
+        });
+
+        // Sample database simulation functions
+        // In a real application, these would connect to your backend API
+
+        function loadProductsFromDatabase() {
+            // This would be an API call to your backend
+            // fetch('/api/products').then(response => response.json()).then(data => {...})
+            return products;
+        }
+
+        function saveOrderToDatabase(orderData) {
+            // This would be an API call to your backend
+            // fetch('/api/orders', { method: 'POST', body: JSON.stringify(orderData) })
+            console.log('Saving order to database:', orderData);
+        }
+
+        function updateProductInDatabase(productId, productData) {
+            // This would be an API call to your backend
+            // fetch(`/api/products/${productId}`, { method: 'PUT', body: JSON.stringify(productData) })
+            console.log('Updating product in database:', productId, productData);
+        }
+
+        // Admin functions (you would implement these in your backend admin panel)
+        function addProduct(productData) {
+            // Add new product to database
+            products.push({...productData, id: Date.now()});
+            displayProducts();
+        }
+
+        function updateProduct(productId, productData) {
+            // Update existing product
+            const index = products.findIndex(p => p.id === productId);
+            if (index !== -1) {
+                products[index] = {...products[index], ...productData};
+                displayProducts();
+            }
+        }
+
+        function deleteProduct(productId) {
+            // Remove product from database
+            const index = products.findIndex(p => p.id === productId);
+            if (index !== -1) {
+                products.splice(index, 1);
+                displayProducts();
+            }
+        }
+    </script>
+</body>
+</html>
