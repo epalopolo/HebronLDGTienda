@@ -93,6 +93,25 @@ async function initDatabase() {
       )
     `);
 
+    // Create payments table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS payments (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        order_id UUID REFERENCES orders(id) ON DELETE CASCADE,
+        payment_method VARCHAR(50) NOT NULL,
+        transaction_id VARCHAR(255) UNIQUE,
+        external_payment_id VARCHAR(255),
+        amount DECIMAL(10, 2) NOT NULL,
+        currency VARCHAR(3) DEFAULT 'ARS',
+        status VARCHAR(50) DEFAULT 'pending',
+        payment_date TIMESTAMP,
+        gateway_response JSONB,
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Create indexes for better performance
     await client.query('CREATE INDEX IF NOT EXISTS idx_products_category ON products(category)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_products_active ON products(active)');
@@ -100,6 +119,9 @@ async function initDatabase() {
     await client.query('CREATE INDEX IF NOT EXISTS idx_orders_customer_email ON orders(customer_email)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_payments_order_id ON payments(order_id)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_payments_transaction_id ON payments(transaction_id)');
 
     // Create trigger to update updated_at automatically
     await client.query(`
@@ -133,6 +155,14 @@ async function initDatabase() {
       DROP TRIGGER IF EXISTS update_orders_updated_at ON orders;
       CREATE TRIGGER update_orders_updated_at
         BEFORE UPDATE ON orders
+        FOR EACH ROW
+        EXECUTE FUNCTION update_updated_at_column()
+    `);
+
+    await client.query(`
+      DROP TRIGGER IF EXISTS update_payments_updated_at ON payments;
+      CREATE TRIGGER update_payments_updated_at
+        BEFORE UPDATE ON payments
         FOR EACH ROW
         EXECUTE FUNCTION update_updated_at_column()
     `);
